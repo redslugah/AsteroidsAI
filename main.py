@@ -1,11 +1,12 @@
 import pygame
-import neat
+#import neat
 import time
 import os
 import random
+import math
 pygame.font.init()
 
-WIN_WIDTH, WIN_HEIGHT = 1280, 900
+WIN_WIDTH, WIN_HEIGHT = 600, 600
 SHIPS =[pygame.image.load(os.path.join("src", "ship.png")), pygame.image.load(os.path.join("src", "ship2.png")), pygame.image.load(os.path.join("src", "ship3.png"))]
 ASTEROID_B = pygame.image.load(os.path.join("src", "b.png"))
 ASTEROID_M = pygame.transform.scale2x(pygame.image.load(os.path.join("src", "m.png")))
@@ -23,6 +24,7 @@ class ship:
         self.tilt = 0
 
     def move(self):
+        self.acceleration = pygame.Vector2(math.sin(math.radians(self.tilt))*-1, math.cos(math.radians(self.tilt))*-1)
         self.position += self.velocity
 
         if self.position.x > WIN_WIDTH:
@@ -105,6 +107,12 @@ def main():
     while run:
         clock.tick(30)
         for event in pygame.event.get():
+            if event.type == pygame.KEYDOWN:
+                if event.key == pygame.K_ESCAPE:
+                    run = False
+                    pygame.QUIT()
+                    quit()                   
+                
             if event.type == pygame.QUIT:
                 run = False
                 pygame.QUIT()
@@ -116,9 +124,15 @@ def main():
             nave.tilter(pygame.K_RIGHT)
         if key_pressed[pygame.K_UP]:
             nave.velocity += nave.acceleration
+        if key_pressed[pygame.K_DOWN]:
+            nave.velocity -= nave.acceleration
 
         for asteroids in rock:
             asteroids.move()
+        if nave.velocity.x > 0 or nave.velocity.y > 0:
+            nave.velocity -=pygame.Vector2(nave.velocity/20, nave.velocity/20)
+        elif nave.velocity.x < 0 or nave.velocity.y < 0:
+            nave.velocity -=pygame.Vector2(nave.velocity/20, nave.velocity/20)
         nave.move()
         draw_window(win, rock, nave)
         
