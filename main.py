@@ -16,12 +16,15 @@ STAT_FONT = pygame.font.SysFont("comicsans", 50)
 
 
 class ship:
+    SHIP = SHIPS
+    ANIMATION = 3
     def __init__(self):
         self.position = pygame.Vector2(WIN_WIDTH/2, WIN_HEIGHT/2)
         self.velocity = pygame.Vector2(0, 0)
         self.acceleration = pygame.Vector2(0, 0)
         self.img = SHIPS[0]
         self.tilt = 0
+        self.img_count = 0
 
     def move(self):
         self.acceleration = pygame.Vector2(math.sin(math.radians(self.tilt))*-1, math.cos(math.radians(self.tilt))*-1)
@@ -46,7 +49,21 @@ class ship:
         if self.tilt < 0:
             self.tilt = 359
 
-    def draw(self, win):
+    def draw(self, win, fly):
+        if fly:
+            self.img_count +=1
+            if self.img_count < self.ANIMATION:
+                self.img = self.SHIP[0]
+            elif self.img_count < self.ANIMATION+1:
+                self.img = self.SHIP[1]
+            elif self.img_count < self.ANIMATION+2:
+                self.img = self.SHIP[2]
+                self.img_count = 0
+        else:
+            if -5 <= self.velocity.x <= 5 and -5 <= self.velocity.y <= 5:
+                self.img_count = 0
+                self.img = self.SHIP[0]
+
         rotated_image = pygame.transform.rotate(self.img, self.tilt)
         new_rect = rotated_image.get_rect(center = self.img.get_rect(topleft = (self.position)).center)
         win.blit(rotated_image, new_rect.topleft)
@@ -87,7 +104,7 @@ class bullet:
 
 def draw_window(win, rock, nave):
     win.blit(BG, (0,0))
-    nave.draw(win)
+    nave.draw(win, False)
 
     for asteroids in rock:
         asteroids.draw(win)
@@ -124,6 +141,7 @@ def main():
             nave.tilter(pygame.K_RIGHT)
         if key_pressed[pygame.K_UP]:
             nave.velocity += nave.acceleration
+            nave.draw(win, True)
         if key_pressed[pygame.K_DOWN]:
             nave.velocity -= nave.acceleration
 
