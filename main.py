@@ -7,12 +7,27 @@ import math
 pygame.font.init()
 
 WIN_WIDTH, WIN_HEIGHT = 600, 600
+BULLET  = pygame.image.load(os.path.join("src", "bullet.png"))
 SHIPS =[pygame.image.load(os.path.join("src", "ship.png")), pygame.image.load(os.path.join("src", "ship2.png")), pygame.image.load(os.path.join("src", "ship3.png"))]
 ASTEROID_B = pygame.image.load(os.path.join("src", "b.png"))
 ASTEROID_M = pygame.transform.scale2x(pygame.image.load(os.path.join("src", "m.png")))
 ASTEROID_S = pygame.transform.scale2x(pygame.image.load(os.path.join("src", "s.png")))
 BG = pygame.transform.scale2x(pygame.image.load(os.path.join("src", "bg.png")))
 STAT_FONT = pygame.font.SysFont("comicsans", 50)
+
+
+class bullet:
+    def __init__(self) -> None:
+        self.velocity = pygame.Vector2(0,0)
+        self.position = pygame.Vector2(200,200)
+        self.img = BULLET
+
+    def move(self):
+        pass
+
+    def draw(self, win):
+        win.blit(self.img, self.position)
+
 
 
 class ship:
@@ -81,13 +96,13 @@ class asteroid:
         win.blit(self.img, (self.x, self.y))
 
 
-class bullet:
-    pass
-
-
-def draw_window(win, rock, nave):
+def draw_window(win, rock, nave, bull = None):
     win.blit(BG, (0,0))
     nave.draw(win)
+    try:
+        bull.draw(win)
+    except:
+        pass
 
     for asteroids in rock:
         asteroids.draw(win)
@@ -103,8 +118,10 @@ def main():
     score = 0
     rock = [asteroid("B"), asteroid("B"), asteroid("B"), asteroid("B"), asteroid("B")]
     nave = ship()
+    shot = False
 
     while run:
+        shot = False
         clock.tick(30)
         for event in pygame.event.get():
             if event.type == pygame.KEYDOWN:
@@ -126,6 +143,9 @@ def main():
             nave.velocity += nave.acceleration
         if key_pressed[pygame.K_DOWN]:
             nave.velocity -= nave.acceleration
+        if key_pressed[pygame.K_SPACE]:
+            bull = bullet()
+            shot = True
 
         for asteroids in rock:
             asteroids.move()
@@ -134,7 +154,10 @@ def main():
         elif nave.velocity.x < 0 or nave.velocity.y < 0:
             nave.velocity -=pygame.Vector2(nave.velocity/20, nave.velocity/20)
         nave.move()
-        draw_window(win, rock, nave)
+        if shot:
+            draw_window(win, rock, nave, bull)
+        else:
+            draw_window(win, rock, nave)
         
 
 if __name__ == "__main__":
