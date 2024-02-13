@@ -6,7 +6,7 @@ import random
 import math
 pygame.font.init()
 
-WIN_WIDTH, WIN_HEIGHT = 600, 600
+WIN_WIDTH, WIN_HEIGHT = 1280, 900
 BULLET  = pygame.image.load(os.path.join("src", "bullet.png"))
 SHIPS =[pygame.image.load(os.path.join("src", "ship.png")), pygame.image.load(os.path.join("src", "ship2.png")), pygame.image.load(os.path.join("src", "ship3.png"))]
 ASTEROID_B = pygame.image.load(os.path.join("src", "b.png"))
@@ -31,7 +31,7 @@ class bullet:
         win.blit(self.img, self.position)
 
     def get_mask(self):
-        return pygame.mask.from_surface(self.img)
+        return pygame.mask.from_surface(self.img.convert_alpha())
 
 
 
@@ -89,7 +89,7 @@ class ship:
         win.blit(rotated_image, new_rect.topleft)
 
     def get_mask(self):
-        return pygame.mask.from_surface(self.img)
+        return pygame.mask.from_surface(self.img.convert_alpha())
     
                  
 class asteroid:
@@ -145,35 +145,35 @@ class asteroid:
     def collide(self, bullet = None, nave = None):
 
         if nave == None:
-            asteroid_mask = pygame.mask.from_surface(self.img)
+            asteroid_mask = pygame.mask.from_surface(self.img.convert_alpha())
             bullet_mask = bullet.get_mask()
             ba_offset = (self.x - bullet.position.x, self.y - round(bullet.position.y))
             ba_point = bullet_mask.overlap(asteroid_mask, ba_offset)
             if ba_point:return True
 
         else:
-            asteroid_mask = pygame.mask.from_surface(self.img)
+            asteroid_mask = pygame.mask.from_surface(self.img.convert_alpha())
             nave_mask = nave.get_mask()
             na_offset = (self.x - nave.position.x, self.y - round(nave.position.y))
             na_point = nave_mask.overlap(asteroid_mask, na_offset)
-            if na_point: return True
+            if na_point: 
+                return True
         
         return False    
 
 
-def draw_window(win, rock, nave, bull = None, fly = False):
+def draw_window(win, rock, score, nav = None, bull = None, fly = False):
     win.blit(BG, (0,0))
+    text = STAT_FONT.render("Score: " + str(score), 1, (255,255,255))
+    win.blit(text, (WIN_WIDTH -10 - text.get_width(), 5))
+    for asteroids in rock:
+        asteroids.draw(win)
     try:
+        nav.draw(win, fly)
         for b in bull:
             b.draw(win)
     except:
         pass
-
-    for asteroids in rock:
-        asteroids.draw(win)
-    nave.draw(win, fly)
-
-
     pygame.display.update()
 
 
@@ -184,17 +184,20 @@ def main():
     score = 0
     #rock = [asteroid("B"), asteroid("B"), asteroid("B"), asteroid("B"), asteroid("B")]
     rock = []
-    nave = ship()
+    nave = [ship()]
     shot = False
     bull =[]
     gigidy = 0
-    for ast in range(5):
-        rock.append(asteroid("B", 0, 0))
 
     while run:
-        if gigidy > 30:
-            gigidy = 30
-        if gigidy < 30:
+        if len(nave) == 0:
+            break
+        if len(rock) == 0:
+            for ast in range(5):
+                rock.append(asteroid("B", 0, 0))
+        if gigidy > 15:
+            gigidy = 15
+        if gigidy < 15:
             gigidy += 1
         clock.tick(30)
         for event in pygame.event.get():
@@ -209,26 +212,34 @@ def main():
                 pygame.QUIT()
                 quit()
         key_pressed = pygame.key.get_pressed()
-        if key_pressed[pygame.K_LEFT]:
-            nave.tilter(pygame.K_LEFT)
-        if key_pressed[pygame.K_RIGHT]:
-            nave.tilter(pygame.K_RIGHT)
-        if key_pressed[pygame.K_UP]:
-            nave.velocity += nave.acceleration
-            nave.draw(win, True)
-        if key_pressed[pygame.K_DOWN]:
-            nave.velocity -= nave.acceleration
-        if key_pressed[pygame.K_SPACE] and gigidy == 30:
-            bull.append(bullet(nave.position, nave.acceleration, nave.velocity.x, nave.velocity.y))
-            shot = True
-            gigidy = 0
+        for z, nav in enumerate(nave):
+            if key_pressed[pygame.K_LEFT]:
+                nav.tilter(pygame.K_LEFT)
+            if key_pressed[pygame.K_RIGHT]:
+                nav.tilter(pygame.K_RIGHT)
+            if key_pressed[pygame.K_UP]:
+                nav.velocity += nav.acceleration
+                nav.draw(win, True)
+            if key_pressed[pygame.K_DOWN]:
+                nav.velocity -= nav.acceleration
+            if key_pressed[pygame.K_SPACE] and gigidy == 15:
+                bull.append(bullet(nav.position, nav.acceleration, nav.velocity.x, nav.velocity.y))
+                shot = True
+                gigidy = 0
 
         for y,aste in enumerate(rock):
-            if aste.collide(False, nave):
-                print("ded")
+            for z, nav in enumerate(nave):
+                if aste.collide(False, nav):
+                    print("ded")
+                    nave.pop(z)
             for x, b in enumerate(bull):
                 if aste.collide(b):
-                    print("aaaaaaaaaa")
+                    if aste.type == "B":
+                        score += 20
+                    elif aste.type == "M":
+                        score += 50
+                    elif aste.type == "S":
+                        score += 100
                     bull.pop(x)
                     if aste.type == "B":
                         rock.append(asteroid("M", aste.x, aste.y))
@@ -241,20 +252,24 @@ def main():
 
         for asteroids in rock:
             asteroids.move()
-        if nave.velocity.x > 0 or nave.velocity.y > 0:
-            nave.velocity -=pygame.Vector2(nave.velocity/20, nave.velocity/20)
-        elif nave.velocity.x < 0 or nave.velocity.y < 0:
-            nave.velocity -=pygame.Vector2(nave.velocity/20, nave.velocity/20)
-        nave.move()
-        if shot:
-            for x, b in enumerate(bull):
-                if (b.position.x < 0 or b.position.x > WIN_WIDTH)or(b.position.y < 0 or b.position.y > WIN_HEIGHT):
-                    bull.pop(x)
-                b.move()
-            draw_window(win, rock, nave, bull)
+        if len(nave) > 0:
+            for z, nav in enumerate(nave):
+                if nav.velocity.x > 0 or nav.velocity.y > 0:
+                    nav.velocity -=pygame.Vector2(nav.velocity/20, nav.velocity/20)
+                elif nav.velocity.x < 0 or nav.velocity.y < 0:
+                    nav.velocity -=pygame.Vector2(nav.velocity/20, nav.velocity/20)
+                nav.move()
+                if shot:
+                    for x, b in enumerate(bull):
+                        if (b.position.x < 0 or b.position.x > WIN_WIDTH)or(b.position.y < 0 or b.position.y > WIN_HEIGHT):
+                            bull.pop(x)
+                        b.move()
+                    draw_window(win, rock, score, nav, bull)
+                else:
+                    draw_window(win, rock, score, nav)
         else:
-            draw_window(win, rock, nave)
-        
+            draw_window(win, rock, score)
 
 if __name__ == "__main__":
-    main()
+    while True:
+        main()
