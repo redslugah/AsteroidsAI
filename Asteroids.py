@@ -230,7 +230,7 @@ def main():
         for y,aste in enumerate(rock):
             for z, nav in enumerate(nave):
                 if aste.collide(False, nav):
-                    print("ded")
+                    print(f"Game over! Score: {score}")
                     nave.pop(z)
             for x, b in enumerate(bull):
                 if aste.collide(b):
